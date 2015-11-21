@@ -1,4 +1,4 @@
-Match Group jail
+Match Group sshusers
     ChrootDirectory %CHROOT_DIR_BASE%/%u%USER_CHROOT_INSTALL_DIR%
     X11Forwarding no
     AllowTcpForwarding no

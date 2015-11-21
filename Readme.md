@@ -37,7 +37,7 @@ Example to create a user soletic and an isolated chroot environment in /home/sol
 ```
 $ sudo docker run -d -p 2222:22 -v /home/docker/hosting/src:/home -e USER_CHROOT_INSTALL_DIR=/volumes --name sshd soletic/chrootssh
 $ sudo docker exec -it sshd /bin/bash
-bash@sshd $ /chroot.sh adduser -u soletic -id 10001 -home www
+bash@sshd $ /chroot.sh adduser -u soletic -id 10001 -home /www
 ```
 
 Other solution :
@@ -45,7 +45,7 @@ Other solution :
 ```
 $ sudo docker run -d -p 2222:22 -v /home/docker/hosting/src:/home --name sshd soletic/chrootssh
 $ sudo docker exec -it sshd /bin/bash
-bash@sshd $ /chroot.sh adduser -u soletic -id 10001 -home www -dir ${CHROOT_DIR_BASE}/soletic/volumes
+bash@sshd $ /chroot.sh adduser -u soletic -id 10001 -home /www -dir ${CHROOT_DIR_USERS}/soletic/volumes
 ```
 
 ## Extend to add command

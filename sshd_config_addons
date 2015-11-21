@@ -1,0 +1,5 @@
+Match Group jail
+    ChrootDirectory %CHROOT_DIR_BASE%/%u
+    X11Forwarding no
+    AllowTcpForwarding no
+    AuthorizedKeysFile %CHROOT_DIR_BASE%/%u/.ssh/authorized_keys

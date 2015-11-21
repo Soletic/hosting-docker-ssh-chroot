@@ -1,6 +1,10 @@
 # Docker image to setup a chroot ssh
 
-This docker image is a based image to create vps image as many times as necessary. Soletic uses it to deploy multiples VPS on its physical servers.
+Docker image to create a container exposing a ssh service with chroot features.
+
+You can use this image to mount a host directory in the /home volume and after create users in the container to give restrictive ssh and sftp access to a */home* subdirectory.
+
+Only basis commands have been installed in the chroot mode : bash, cp, ls, mv, mkdir
 
 ## Installation
 
@@ -9,28 +13,47 @@ $ sudo mkdir -p /home/docker/hosting/src
 $ export DOCKER_HOSTING=/home/docker/hosting
 $ sudo git clone https://github.com/Soletic/hosting-docker-sshd.git $DOCKER_HOSTING/src/sshd
 $ sudo docker build -t soletic/sshd:latest $DOCKER_HOSTING/src/sshd
-$ sudo git clone https://github.com/Soletic/hosting-docker-sshd.git $DOCKER_HOSTING/src/sshd
+$ sudo git clone https://github.com/Soletic/hosting-docker-ssh-chroot.git $DOCKER_HOSTING/src/ssh-chroot
+$ sudo docker build -t soletic/chrootssh:latest $DOCKER_HOSTING/src/ssh-chroot
 ``` 
 
-### Basic example
+Run the image as a container
 
 ```
-$ docker run -d --name=example_org -e HOST_NAME=example -e HOST_DOMAIN_NAME=example.org -p 80:80 solidees/webvps
+$ sudo docker run -d -p 2222:22 -v /home/docker/hosting/src:/home --name sshd soletic/chrootssh
 ```
 
-* HOST_NAME : a name without spaces and used to setup account for mysql
-* HOST_DOMAIN_NAME : default domain name used to setup apache
+Example to add a user soletic with ssh access chrooted
 
-## Running options
+```
+$ sudo docker exec -it sshd /bin/bash
+bash@sshd $ /chroot.sh adduser -u soletic -id 10001
+```
 
-The image define many environment variables to configure the image running :
+The command creates a user soletic and an isolated chroot environment in /home/soletic with home in /home/soletic/home. You can add ssh key in /home/soletic/.ssh/authorized_keys
 
-* MYSQL_MAX_QUERIES_PER_HOUR (default 10000000)
-* MYSQL_MAX_UPDATES_PER_HOUR (default 1000000)
-* MYSQL_MAX_CONNECTIONS_PER_HOUR (default 5000)
-* MYSQL_MAX_USER_CONNECTIONS (default 50)
-* PHP_TIME_ZONE (default  "Europe/Paris"
-* PHP_UPLOAD_MAX_FILESIZE (default 10M)
-* PHP_POST_MAX_SIZE (default 10M)
-* PHP_MEMORY_LIMIT (default  256M)
-* WORKER_UID : system user id used to set the user id of www-data, the owner of /var/www.
+Example to create a user soletic and an isolated chroot environment in /home/soletic/volumes with home in /home/solidees/volumes/www :
+
+```
+$ sudo docker run -d -p 2222:22 -v /home/docker/hosting/src:/home -e USER_CHROOT_INSTALL_DIR=/volumes --name sshd soletic/chrootssh
+$ sudo docker exec -it sshd /bin/bash
+bash@sshd $ /chroot.sh adduser -u soletic -id 10001 -home www
+```
+
+Other solution :
+
+```
+$ sudo docker run -d -p 2222:22 -v /home/docker/hosting/src:/home --name sshd soletic/chrootssh
+$ sudo docker exec -it sshd /bin/bash
+bash@sshd $ /chroot.sh adduser -u soletic -id 10001 -home www -dir ${CHROOT_DIR_BASE}/soletic/volumes
+```
+
+## Extend to add command
+
+Writing in progress
+
+## References
+
+Documentation used to create this docker image :
+
+* [http://www.58bits.com/blog/2014/01/09/ssh-and-sftp-chroot-jail](http://www.58bits.com/blog/2014/01/09/ssh-and-sftp-chroot-jail)

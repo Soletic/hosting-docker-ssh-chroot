@@ -39,7 +39,7 @@ done
 
 # copy /lib/ld-linux* or /lib64/ld-linux* to $CHROOT_DIR/$sldlsubdir
 # get ld-linux full file location 
-sldl="$(ldd $1 | grep 'ld-linux' | awk '{ print $1}')"
+sldl="$(ldd $BIN_PATH | grep 'ld-linux' | awk '{ print $1}')"
 # now get sub-dir
 sldlsubdir="$(dirname $sldl)"
 

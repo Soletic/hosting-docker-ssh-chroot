@@ -1,5 +1,5 @@
 Match Group sshusers
-    ChrootDirectory %CHROOT_DIR_BASE%/%u%USER_CHROOT_INSTALL_DIR%
+    ChrootDirectory %CHROOT_INSTALL_DIR%/%u
     X11Forwarding no
     AllowTcpForwarding no
-    AuthorizedKeysFile %CHROOT_DIR_BASE%/%u%USER_CHROOT_INSTALL_DIR%/.ssh/authorized_keys
+    AuthorizedKeysFile %CHROOT_INSTALL_DIR%/%u/home/.ssh/authorized_keys

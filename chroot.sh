@@ -1,54 +1,85 @@
 #!/bin/bash
 
+sshusers_file=${CHROOT_USERS_HOME_DIR}/.sshusers
+
+function _index_user_information {
+	local user=$1
+	local user_id=$2
+	local password=$3
+	local chroot_dir=$4
+	local user_home_dir=$5
+
+	# remove if exist
+	_remove_user_from_index $user
+
+	if [ ! -f $sshusers_file ]; then
+		touch $sshusers_file
+		# only root can read
+		chmod og-rxw $sshusers_file
+	fi
+	echo "$user:$user_id:$password:$chroot_dir:$user_home_dir" >> $sshusers_file
+}
+function _remove_user_from_index {
+	user=$1
+	if [ ! -f $sshusers_file ]; then
+		return
+	fi
+	sed -ri -e "/^$user:/d" $sshusers_file
+}
+
 function _setup_user {
 
-	chroot_dir=$1
-	user=$2
-	user_id=$3
-	user_home_dir=$4
+	local chroot_dir=$1
+	local user=$2
+	local user_id=$3
+	local user_home_dir=$4
+	local user_password=$5
 
 	mkdir -p $chroot_dir/{dev,etc,lib,lib64,usr,bin,home}
-	mkdir -p $chroot_dir/$user_dir
 	mkdir -p $chroot_dir/usr/bin
+	mkdir -p $chroot_dir/usr/share
 	chown root:root $chroot_dir
 	chmod go-w $chroot_dir
-
-	# Base command
-	cd $chroot_dir/bin
-	cp /bin/bash .
-	cp /bin/sh .
-	cp /bin/ls .
-	cp /bin/cp .
-	cp /bin/mv .
-	cp /bin/mkdir .
-
-	/l2chroot.sh $chroot_dir /bin/bash
-	/l2chroot.sh $chroot_dir /bin/sh
-	/l2chroot.sh $chroot_dir /bin/ls
-	/l2chroot.sh $chroot_dir /bin/cp
-	/l2chroot.sh $chroot_dir /bin/mv
-	/l2chroot.sh $chroot_dir /bin/mkdir
-
-	cd $chroot_dir/usr/bin
-	cp /usr/bin/clear .
-	/l2chroot.sh $chroot_dir /usr/bin/clear
-	cd $chroot_dir/lib
-	cp -r /lib/terminfo .
+	mknod -m 666 $chroot_dir/dev/tty c 5 0
+	mknod -m 666 $chroot_dir/dev/null c 1 3
+	mknod -m 444 $chroot_dir/dev/random c 1 8
+	mknod -m 444 $chroot_dir/dev/urandom c 1 9
+	chown root:tty $chroot_dir/dev/tty
 	
-	USER_PASSWORD=$(pwgen -s 12 1)
-	useradd -s /bin/bash -u $user_id --home-dir=$user_home_dir --no-create-home --user-group -G sshusers $user; echo $user:$USER_PASSWORD | chpasswd
-	mkdir $chroot_dir/.ssh
-	touch $chroot_dir/.ssh/authorized_keys
-	chown $user:$user $chroot_dir$user_home_dir $chroot_dir/.ssh $chroot_dir/.ssh/authorized_keys
+	/install_bin.sh $chroot_dir
+	
+	if id -u "$user" >/dev/null 2>&1; then
+		:
+	else
+		if [ "$user_password" = "" ]; then
+			USER_PASSWORD=$(pwgen -s 12 1)
+		else
+			USER_PASSWORD=$user_password
+		fi
+		useradd -s /bin/bash -u $user_id --home-dir=/home --no-create-home --user-group -G sshusers $user; echo $user:$USER_PASSWORD | chpasswd
+		# backup password
+		echo "========================================================================"
+		echo "	Password for $user : $USER_PASSWORD"
+		echo "========================================================================"
+		echo "$user:$USER_PASSWORD" > $chroot_dir/credentials
 
-	echo "========================================================================"
-	echo "	Password for $user : $USER_PASSWORD"
-	echo "========================================================================"
+		# backup information
+		_index_user_information "$user" "$user_id" "$USER_PASSWORD" "$chroot_dir/home" "$user_home_dir"
+	fi
+
+	# ssh keys
+	mkdir $user_home_dir/.ssh
+	touch $user_home_dir/.ssh/authorized_keys
+	chown $user:$user $user_home_dir/.ssh $user_home_dir/.ssh/authorized_keys
+
+	# mount home
+	chown $user:$user $chroot_dir
+	mount --bind -o bind $user_home_dir $chroot_dir/home	
 }
 
 case "$1" in
 	adduser)
-		# Usage : adduser --user|-u soletic -id 10001 -dir|--chroot-dir /home/soletic -home|--user-home-dir /home
+		# Usage : adduser --user|-u soletic -id 10001 -dir|--chroot-dir /chroot/soletic -home|--user-home-dir /home/soletic
 		while [[ $# > 1 ]] 
 		do
 			key="$1"
@@ -69,6 +100,10 @@ case "$1" in
 					user_home_dir="$2"
 					shift # past argument
 					;;
+				-p|--password)
+					user_password="$2"
+					shift # past argument
+					;;
 				*)
 					# unknown option
 					shift
@@ -76,22 +111,64 @@ case "$1" in
 			esac
 		done
 		if [ -z "$user" ] || [ -z "$user_id" ]; then
-			>&2 echo "[adduser] argument missing. Usage : $0 adduser --user|-u <username> -id <userid> -dir|--chroot-dir <absolute path> -home|--user-home-dir <absolute path>"
-			>&2 echo "[adduser] -dir (default : ${CHROOT_DIR_BASE}/<username>${USER_CHROOT_INSTALL_DIR}) : path to chroot user directory. Exemple : /home/soletic"
-			>&2 echo "[adduser] -home (default : /home) : absolute path from chroot_dir to setup the user home dir in his chroot environment. Example : /home"
+			>&2 echo "[adduser] argument missing. Usage : $0 $1 --user|-u <username> -id <userid> -p <password> -dir|--chroot-dir <absolute path> -home|--user-home-dir <absolute path>"
+			>&2 echo "[adduser] -dir (default : ${CHROOT_INSTALL_DIR}/<username>) : directory installation of the chroot user environment"
+			>&2 echo "[adduser] -home (default : ${CHROOT_USERS_HOME_DIR}/<username>${CHROOT_USER_HOME_BASEPATH}) : dir path of the user data and mounted as the home dir of the chroot environment"
 			exit 1
 		fi
 		if [ -z "$user_home_dir" ]; then
-			user_home_dir="/home"
+			user_home_dir=${CHROOT_USERS_HOME_DIR}/$user${CHROOT_USER_HOME_BASEPATH}
 		fi
 		if [ -z "$chroot_dir" ]; then
-			chroot_dir=${CHROOT_DIR_BASE}/$user${USER_CHROOT_INSTALL_DIR}
+			chroot_dir=${CHROOT_INSTALL_DIR}/$user
 		fi
 		if [ ! -d $chroot_dir ]; then
 			mkdir -p $chroot_dir
-			exit
 		fi
-		_setup_user $chroot_dir $user $user_id $user_home_dir
+		_setup_user $chroot_dir $user $user_id $user_home_dir $user_password
+		;;
+	deluser)
+		while [[ $# > 1 ]] 
+		do
+			key="$1"
+			case $key in
+				-u|--user)
+					user="$2"
+					shift # past argument
+					;;
+				-dir|--chroot-dir)
+					chroot_dir="$2"
+					shift # past argument
+					;;
+				*)
+					# unknown option
+					shift
+					;;
+			esac
+		done
+		if [ -z "$user" ]; then
+			>&2 echo "[deluser] argument missing. Usage : $0 deluser --user|-u <username>"
+			>&2 echo "[deluser] -dir (default : ${CHROOT_INSTALL_DIR}/<username>) : directory installation of the chroot user environment"
+			exit 1
+		fi
+		if [ -z "$chroot_dir" ]; then
+			chroot_dir=${CHROOT_INSTALL_DIR}/$user
+		fi
+		# Check user exist
+		if id -u "$user" >/dev/null 2>&1; then
+			userdel $user
+		else
+			>&2 echo "[deluser] $user doesn't exist"
+		fi
+		# Umount home
+		if [ -d $chroot_dir/home ]; then
+			umount $chroot_dir/home
+		fi
+		# Remove chroot
+		if [ -d $chroot_dir ]; then
+			rm -Rf $chroot_dir
+		fi
+		_remove_user_from_index $user
 		;;
 	*)
 		>&2 echo "Command $1 not found. Usage : chroot.sh <command> <options>"

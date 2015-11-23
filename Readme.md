@@ -2,7 +2,6 @@
 
 Docker image to create a container exposing a ssh service with chroot features.
 
-
 **Example of usage**
 
 Run a container mouting a docker host directory in the /home volume and create all users required in the container to give restrictive ssh and sftp access to their */home* subdirectory
@@ -11,30 +10,23 @@ Run a container mouting a docker host directory in the /home volume and create a
 
 bash sh, ls, cp, mv, mkdir, touch, vi, cat, sed, date, bunzip2, bzip2, chmod, egrep, fgrep, grep, gunzip, gzip, ln, more, ping, rm, tar, uname', rsync, scp, clear, perl, vi, curl, wget, basename, pager, git, git-receive-pack, git-shell, git-upload-archive, git-upload-pack
 
-## Installation
-
-### Run the container
-
-Clone git docker images required :
+## Install
 
 ```
-$ sudo mkdir -p /home/docker/hosting/src
-$ export DOCKER_HOSTING=/home/docker/hosting
-$ sudo git clone https://github.com/Soletic/hosting-docker-sshd.git $DOCKER_HOSTING/src/sshd
-$ sudo git clone https://github.com/Soletic/hosting-docker-ssh-chroot.git $DOCKER_HOSTING/src/ssh-chroot
+$ git clone https://github.com/Soletic/hosting-docker-ubuntu.git ./ubuntu
+$ git clone https://github.com/Soletic/hosting-docker-sshd.git ./sshd
+$ git clone https://github.com/Soletic/hosting-docker-ssh-chroot.git ./ssh-chroot
+$ docker build -t soletic/ubuntu ./ubuntu
+$ docker build -t soletic/sshd ./sshd
+$ docker build -t soletic/ssh-chroot ./ssh-chroot
 ```
 
-Build images :
-
-```
-$ sudo docker build -t soletic/sshd:latest $DOCKER_HOSTING/src/sshd
-$ sudo docker build -t soletic/chrootsshd:latest $DOCKER_HOSTING/src/ssh-chroot
-``` 
+## Run the container
 
 Run the image as a container
 
 ```
-$ sudo docker run -d -p 2222:22 -v /home/docker/hosting/src:/home --name sshd --privileged soletic/chrootsshd:latest
+$ docker run -d -p 2222:22 -v /path/host:/home --name sshd --privileged soletic/ssh-chroot
 ```
 
 * option --privileged required to give mount permissions inside the container ([see here >](https://github.com/docker/docker/issues/5254))
@@ -42,7 +34,7 @@ $ sudo docker run -d -p 2222:22 -v /home/docker/hosting/src:/home --name sshd --
 ### Add your first user
 
 ```
-$ sudo docker exec -it sshd /bin/bash
+$ docker exec -it sshd /bin/bash
 bash@sshd $ /chroot.sh adduser -u soletic -id 10001
 ```
 
@@ -58,7 +50,7 @@ The command creates a user soletic and an isolated chroot environment :
 If the real home directory of soletic user is for example /home/soletic/volumes/www, run the image setting up the environment variable CHROOT_USER_HOME_BASEPATH :
 
 ```
-$ sudo docker run -d -p 2222:22 -v /home/docker/hosting/src:/home -e CHROOT_USER_HOME_BASEPATH=/volumes/www --name sshd --privileged soletic/chrootsshd:latest
+$ sudo docker run -d -p 2222:22 -v /path/host:/home -e CHROOT_USER_HOME_BASEPATH=/volumes/www --name sshd --privileged soletic/ssh-chroot:latest
 ```
 
 And the command creating the user will mount /home/soletic/volumes/www in /chroot/soletic/home
@@ -69,6 +61,10 @@ And the command creating the user will mount /home/soletic/volumes/www in /chroo
 $ sudo docker exec -it sshd /bin/bash
 bash@sshd $ /chroot.sh deluser -u soletic
 ```
+
+## Stop and remove container without losing users created
+
+The file .sshusers and stored inside the home indexes all users created. If you don't want to lose the list, mount the volume /home with a host directory and often backup it.
 
 ## Extend the image
 

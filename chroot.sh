@@ -67,6 +67,10 @@ function _setup_user {
 		_index_user_information "$user" "$user_id" "$USER_PASSWORD" "$chroot_dir/home" "$user_home_dir"
 	fi
 
+	if [ ! -d $user_home_dir ]; then
+		mkdir -p $user_home_dir
+	fi
+
 	# ssh keys
 	mkdir $user_home_dir/.ssh
 	touch $user_home_dir/.ssh/authorized_keys

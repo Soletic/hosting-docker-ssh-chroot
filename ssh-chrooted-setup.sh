@@ -30,6 +30,3 @@ do
 	fi
 	echo "${user_data[0]}"
 done
-
-# Run the base
-/run.sh

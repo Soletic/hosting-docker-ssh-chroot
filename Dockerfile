@@ -12,12 +12,15 @@ RUN groupadd sshusers
 RUN sed -ri -e 's/^Subsystem sftp.*/Subsystem sftp internal-sftp/' /etc/ssh/sshd_config
 RUN cat /etc/ssh/sshd_config_addons >> /etc/ssh/sshd_config
 
+RUN mkdir -p /chroot/plugins
+
+# Bin utils
 ADD l2chroot.sh /l2chroot.sh
 ADD chroot.sh /chroot.sh
-ADD start.sh /start.sh
 ADD install_bin.sh /install_bin.sh
-
-RUN mkdir -p /chroot/plugins
 RUN chmod 755 /*.sh
 
-CMD ["/start.sh"]
+# Start program
+ADD supervisor-sshchrooted.conf /etc/supervisor/conf.d/supervisor-sshchrooted.conf
+ADD ssh-chrooted-setup.sh /root/scripts/ssh-chrooted-setup.sh
+RUN chmod 755 /root/scripts/*.sh

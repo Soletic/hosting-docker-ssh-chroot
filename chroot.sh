@@ -73,7 +73,7 @@ function _setup_user {
 	chown $user:$user $user_home_dir/.ssh $user_home_dir/.ssh/authorized_keys
 
 	# mount home
-	chown $user:$user $chroot_dir
+	chown $user:$user $chroot_dir/home
 	mount --bind -o bind $user_home_dir $chroot_dir/home	
 }
 

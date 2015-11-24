@@ -35,9 +35,13 @@ function _setup_user {
 	local user_home_dir=$4
 	local user_password=$5
 
-	mkdir -p $chroot_dir/{dev,etc,lib,lib64,usr,bin,home}
+	rm -Rf $chroot_dir/{dev,etc,lib,lib64,usr,bin}
+	mkdir -p $chroot_dir/{dev,etc,lib,lib64,usr,bin}
 	mkdir -p $chroot_dir/usr/bin
 	mkdir -p $chroot_dir/usr/share
+	if [ ! -d $chroot_dir/home ]; then
+		mkdir $chroot_dir/home
+	fi
 	chown root:root $chroot_dir
 	chmod go-w $chroot_dir
 	mknod -m 666 $chroot_dir/dev/tty c 5 0
@@ -72,8 +76,10 @@ function _setup_user {
 	fi
 
 	# ssh keys
-	mkdir $user_home_dir/.ssh
-	touch $user_home_dir/.ssh/authorized_keys
+	if [ ! -d $user_home_dir/.ssh ]; then
+		mkdir $user_home_dir/.ssh
+		touch $user_home_dir/.ssh/authorized_keys
+	fi
 	chown $user:$user $user_home_dir/.ssh $user_home_dir/.ssh/authorized_keys
 
 	# mount home

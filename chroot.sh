@@ -1,6 +1,8 @@
 #!/bin/bash
 
 sshusers_file=${CHROOT_USERS_HOME_DIR}/.sshusers
+# Directory target to mount user data
+TARGET_USER_DIR=/var/www
 
 function _index_user_information {
 	local user=$1
@@ -39,8 +41,8 @@ function _setup_user {
 	mkdir -p $chroot_dir/{dev,etc,lib,lib64,usr,bin}
 	mkdir -p $chroot_dir/usr/bin
 	mkdir -p $chroot_dir/usr/share
-	if [ ! -d $chroot_dir/home ]; then
-		mkdir $chroot_dir/home
+	if [ ! -d $TARGET_USER_DIR ]; then
+		mkdir -p $TARGET_USER_DIR
 	fi
 	chown root:root $chroot_dir
 	chmod go-w $chroot_dir
@@ -60,7 +62,7 @@ function _setup_user {
 		else
 			USER_PASSWORD=$user_password
 		fi
-		useradd -s /bin/bash -u $user_id --home-dir=/home --no-create-home --user-group -G sshusers $user; echo $user:$USER_PASSWORD | chpasswd
+		useradd -s /bin/bash -u $user_id --home-dir=${TARGET_USER_DIR} --no-create-home --user-group -G sshusers $user; echo $user:$USER_PASSWORD | chpasswd
 		# backup password
 		echo "========================================================================"
 		echo "	Password for $user : $USER_PASSWORD"
@@ -68,7 +70,7 @@ function _setup_user {
 		echo "$user:$USER_PASSWORD" > $chroot_dir/credentials
 
 		# backup information
-		_index_user_information "$user" "$user_id" "$USER_PASSWORD" "$chroot_dir/home" "$user_home_dir"
+		_index_user_information "$user" "$user_id" "$USER_PASSWORD" "${chroot_dir}${TARGET_USER_DIR}" "$user_home_dir"
 	fi
 
 	if [ ! -d $user_home_dir ]; then
@@ -84,7 +86,7 @@ function _setup_user {
 
 	# mount home
 	chown $user:$user $chroot_dir/home
-	mount --bind -o bind $user_home_dir $chroot_dir/home	
+	mount --bind -o bind $user_home_dir ${chroot_dir}${TARGET_USER_DIR}	
 }
 
 case "$1" in
@@ -171,8 +173,8 @@ case "$1" in
 			>&2 echo "[deluser] $user doesn't exist"
 		fi
 		# Umount home
-		if [ -d $chroot_dir/home ]; then
-			umount $chroot_dir/home
+		if [ -d ${chroot_dir}${TARGET_USER_DIR} ]; then
+			umount ${chroot_dir}${TARGET_USER_DIR}
 		fi
 		# Remove chroot
 		if [ -d $chroot_dir ]; then

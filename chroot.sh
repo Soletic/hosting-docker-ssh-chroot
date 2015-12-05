@@ -41,8 +41,8 @@ function _setup_user {
 	mkdir -p $chroot_dir/{dev,etc,lib,lib64,usr,bin}
 	mkdir -p $chroot_dir/usr/bin
 	mkdir -p $chroot_dir/usr/share
-	if [ ! -d $TARGET_USER_DIR ]; then
-		mkdir -p $TARGET_USER_DIR
+	if [ ! -d ${chroot_dir}${TARGET_USER_DIR} ]; then
+		mkdir -p ${chroot_dir}${TARGET_USER_DIR}
 	fi
 	chown root:root $chroot_dir
 	chmod go-w $chroot_dir
@@ -85,7 +85,7 @@ function _setup_user {
 	chown $user:$user $user_home_dir/.ssh $user_home_dir/.ssh/authorized_keys
 
 	# mount home
-	chown $user:$user $chroot_dir/home
+	chown $user:$user ${chroot_dir}${TARGET_USER_DIR}
 	mount --bind -o bind $user_home_dir ${chroot_dir}${TARGET_USER_DIR}	
 }
 

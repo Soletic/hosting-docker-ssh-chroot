@@ -37,14 +37,15 @@ function _setup_user {
 	local user_home_dir=$4
 	local user_password=$5
 
-	rm -Rf $chroot_dir/{dev,etc,lib,lib64,usr,bin}
-	mkdir -p $chroot_dir/{dev,etc,lib,lib64,usr,bin}
+	rm -Rf $chroot_dir/{dev,etc,lib,lib64,usr,bin,tmp}
+	mkdir -p $chroot_dir/{dev,etc,lib,lib64,usr,bin,tmp}
 	mkdir -p $chroot_dir/usr/bin
 	mkdir -p $chroot_dir/usr/share
 	if [ ! -d ${chroot_dir}${TARGET_USER_DIR} ]; then
 		mkdir -p ${chroot_dir}${TARGET_USER_DIR}
 	fi
 	chown root:root $chroot_dir
+	chmod 777 $chroot_dir/tmp
 	chmod go-w $chroot_dir
 	mknod -m 666 $chroot_dir/dev/tty c 5 0
 	mknod -m 666 $chroot_dir/dev/null c 1 3
@@ -143,6 +144,21 @@ case "$1" in
 			mkdir -p $chroot_dir
 		fi
 		_setup_user $chroot_dir $user $user_id $user_home_dir $user_password
+		;;
+	binupgrade)
+		# Load users
+		sshusers_file=${CHROOT_USERS_HOME_DIR}/.sshusers
+		IFS=$'\r\n' GLOBIGNORE='*' :; users=($(cat $sshusers_file))
+		for userline in "${users[@]}"
+		do
+			echo " Load ${user_data[0]}"
+			IFS=':' read -r -a user_data <<< "$userline"
+			# Check user exist
+			if id -u "${user_data[0]}" >/dev/null 2>&1; then
+				echo "Upgrade $chroot_dir"
+				/install_bin.sh ${CHROOT_INSTALL_DIR}/${user_data[0]}
+			fi
+		done
 		;;
 	deluser)
 		while [[ $# > 1 ]] 

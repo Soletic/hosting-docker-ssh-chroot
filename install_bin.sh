@@ -12,6 +12,10 @@ function _install_bin {
 	chroot_dir=$2
 	if [ -f $bin_path ]; then
 		echo "# $bin_path > $chroot_dir$bin_path"
+		local dir_bin=$(dirname $bin_path)
+		if [ -d $dir_bin ]; then
+			mkdir -p $dir_bin
+		fi
 		cp -L $bin_path $chroot_dir$bin_path
 		/l2chroot.sh $chroot_dir "$bin_path"
 	fi
@@ -19,10 +23,10 @@ function _install_bin {
 
 # Bin basis
 BIN_LIST=( 'bash' 'sh' 'ls' 'cp' 'mv' 'mkdir' 'touch' 'vi' 'cat' 'sed' 'date' 'bunzip2' 'bzip2' 'chmod' 'egrep' 'fgrep' 'grep' 'gunzip' 'gzip' 'ln' 'more' 'ping' 'rm' 'tar' 'uname' )
-USR_BIN_LIST=( 'rsync' 'scp' 'tr' 'clear' 'perl' 'vi' 'curl' 'wget' 'basename' 'pager' 'git' 'git-receive-pack' 'git-shell' 'git-upload-archive' 'git-upload-pack' 'unzip')
+USR_BIN_LIST=( 'xargs' 'find' 'tail' 'rsync' 'scp' 'tr' 'clear' 'perl' 'vi' 'curl' 'wget' 'basename' 'pager' 'git' 'git-receive-pack' 'git-shell' 'git-upload-archive' 'git-upload-pack' 'unzip')
 # Install required
 UIDBASICS_REQUIRED=('lib/x86_64-linux-gnu/libnsl.so.1' 'lib/x86_64-linux-gnu/libnss*.so.2' 'etc/nsswitch.conf' 'etc/ld.so.*' 'lib/terminfo' 'etc/passwd' 'etc/group' )
-NETBASICS_REQUIRED=( 'lib/x86_64-linux-gnu/libnss_dns.so.2' 'etc/hosts' 'etc/resolv.conf' '/etc/protocols' '/etc/services' )
+NETBASICS_REQUIRED=( 'lib/x86_64-linux-gnu/libnss_dns.so.2' 'etc/resolv.conf' '/etc/protocols' '/etc/services' )
 EDITORS_REQUIRED=( 'etc/vimrc' 'usr/share/vim' )
 GIT_REQUIRED=( 'usr/lib/git-core*' 'usr/share/git*' 'usr/lib/x86_64-linux-gnu/libcurl*.so*' 'etc/ssl*' )
 PERL_REQUIRED=( 'usr/lib/perl*' 'usr/share/perl*' )
@@ -31,6 +35,11 @@ FILES_REQUIRED=("${UIDBASICS_REQUIRED[@]}" "${NETBASICS_REQUIRED[@]}" "${EDITORS
 INSTALL_FUNCTIONS=()
 
 plugins=( $(find / -wholename "${CHROOT_INSTALL_DIR}/plugins/*.conf" -type f) )
+
+# Copy hosts but don't override
+if [ ! -f $chroot_dir/etc/hosts ]; then
+	cp /etc/hosts $chroot_dir/etc/hosts
+fi
 
 # Complete with plugin
 for plugin in "${plugins[@]}"

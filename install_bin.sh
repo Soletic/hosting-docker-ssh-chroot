@@ -73,5 +73,5 @@ done
 # Install script
 for script in "${PLUGIN_INSTALL_FUNCTIONS[@]}"
 do
-	$script
+	$script $chroot_dir
 done

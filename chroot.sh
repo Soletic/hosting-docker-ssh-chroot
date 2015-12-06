@@ -53,6 +53,11 @@ function _setup_user {
 	chown root:tty $chroot_dir/dev/tty
 	
 	/install_bin.sh $chroot_dir
+	# Copy passwd
+	cp -f /etc/passwd.origin $chroot_dir/etc/passwd
+	cp -f /etc/group.origin $chroot_dir/etc/group
+	echo "${user}:x:${user_id}:${user_id}::${TARGET_USER_DIR}:/bin/bash" >> $chroot_dir/etc/passwd
+	echo "${user}:x:${user_id}:" >> $chroot_dir/etc/group
 	
 	if id -u "$user" >/dev/null 2>&1; then
 		:
@@ -174,11 +179,16 @@ case "$1" in
 		fi
 		# Umount home
 		if [ -d ${chroot_dir}${TARGET_USER_DIR} ]; then
-			umount ${chroot_dir}${TARGET_USER_DIR}
+			# Force kill process being able to prevent umount
+			fuser -ks ${chroot_dir}${TARGET_USER_DIR}
+			# Umount
+			eval "$( (umount ${chroot_dir}${TARGET_USER_DIR} && exitcode=$? >&2 ) 2> >(errorlog=$(cat); typeset -p errorlog) > >(stdoutlog=$(cat); typeset -p stdoutlog); exitcode=$?; typeset -p exitcode )"
 		fi
-		# Remove chroot
-		if [ -d $chroot_dir ]; then
+		# Remove chroot only if umount was a success
+		if [ -d $chroot_dir ] && [ $exitcode -eq 0 ]; then
 			rm -Rf $chroot_dir
+		else
+			echo "[deluser] ${chroot_dir} can't be deleted because it's impossible to unmount ${chroot_dir}${TARGET_USER_DIR} and you could be lost data mounted"
 		fi
 		_remove_user_from_index $user
 		;;

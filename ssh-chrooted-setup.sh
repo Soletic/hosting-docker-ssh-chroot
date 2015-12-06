@@ -14,6 +14,11 @@ do
 	$plugin
 done
 
+if [ ! -f /etc/passwd.origin ]; then
+	cp /etc/passwd /etc/passwd.origin
+	cp /etc/group /etc/group.origin
+fi
+
 # Load users
 sshusers_file=${CHROOT_USERS_HOME_DIR}/.sshusers
 IFS=$'\r\n' GLOBIGNORE='*' :; users=($(cat $sshusers_file))

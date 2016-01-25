@@ -37,8 +37,8 @@ function _setup_user {
 	local user_home_dir=$4
 	local user_password=$5
 
-	rm -Rf $chroot_dir/{dev,etc,lib,lib64,usr,bin,tmp}
-	mkdir -p $chroot_dir/{dev,etc,lib,lib64,usr,bin,tmp}
+	rm -Rf $chroot_dir/{dev,etc,lib,lib64,usr,bin,tmp,proc}
+	mkdir -p $chroot_dir/{dev,etc,lib,lib64,usr,bin,tmp,proc}
 	mkdir -p $chroot_dir/usr/bin
 	mkdir -p $chroot_dir/usr/share
 	if [ ! -d ${chroot_dir}${TARGET_USER_DIR} ]; then

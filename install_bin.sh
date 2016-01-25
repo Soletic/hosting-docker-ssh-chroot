@@ -25,7 +25,7 @@ function _install_bin {
 BIN_LIST=( 'bash' 'sh' 'ls' 'cp' 'mv' 'mkdir' 'touch' 'vi' 'cat' 'sed' 'date' 'bunzip2' 'bzip2' 'chmod' 'egrep' 'fgrep' 'grep' 'gunzip' 'gzip' 'ln' 'more' 'ping' 'rm' 'tar' 'uname' )
 USR_BIN_LIST=( 'xargs' 'find' 'tail' 'rsync' 'scp' 'tr' 'clear' 'perl' 'vi' 'curl' 'wget' 'basename' 'pager' 'git' 'git-receive-pack' 'git-shell' 'git-upload-archive' 'git-upload-pack' 'unzip')
 # Install required
-UIDBASICS_REQUIRED=('lib/x86_64-linux-gnu/libnsl.so.1' 'lib/x86_64-linux-gnu/libnss*.so.2' 'etc/nsswitch.conf' 'etc/ld.so.*' 'lib/terminfo' 'etc/passwd' 'etc/group' )
+UIDBASICS_REQUIRED=( 'proc/cpuinfo' 'lib/x86_64-linux-gnu/libnsl.so.1' 'lib/x86_64-linux-gnu/libnss*.so.2' 'etc/nsswitch.conf' 'etc/ld.so.*' 'lib/terminfo' 'etc/passwd' 'etc/group' )
 NETBASICS_REQUIRED=( 'lib/x86_64-linux-gnu/libnss_dns.so.2' 'etc/resolv.conf' '/etc/protocols' '/etc/services' )
 EDITORS_REQUIRED=( 'etc/vimrc' 'usr/share/vim' )
 GIT_REQUIRED=( 'usr/lib/git-core*' 'usr/share/git*' 'usr/lib/x86_64-linux-gnu/libcurl*.so*' 'etc/ssl*' )

@@ -18,6 +18,7 @@ RUN mkdir -p /chroot/plugins
 ADD l2chroot.sh /l2chroot.sh
 ADD chroot.sh /chroot.sh
 ADD install_bin.sh /install_bin.sh
+ADD install_bin.sh /install_bin-add.sh
 RUN chmod 755 /*.sh
 
 # Start program
